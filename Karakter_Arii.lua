@@ -51,7 +51,7 @@ end
 
 -- Main Frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 180)
+mainFrame.Size = UDim2.new(0, 300, 0, 210)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
@@ -178,12 +178,46 @@ RunService.Stepped:Connect(function()
     end
 end)
 
+-- Fly/Unfly
+local flyActive = false
+local BodyVelocity
+local flyBtn = Instance.new("TextButton")
+flyBtn.Size = UDim2.new(1, 0, 0, 25)
+flyBtn.Position = UDim2.new(0, 0, 0, 115)
+flyBtn.Text = "Fly: OFF"
+flyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+flyBtn.TextColor3 = Color3.new(1, 1, 1)
+flyBtn.Font = Enum.Font.Gotham
+flyBtn.TextSize = 14
+flyBtn.Parent = content
+
+flyBtn.MouseButton1Click:Connect(function()
+    flyActive = not flyActive
+    flyBtn.Text = "Fly: " .. (flyActive and "ON" or "OFF")
+    if flyActive then
+        BodyVelocity = Instance.new("BodyVelocity")
+        BodyVelocity.Velocity = Vector3.zero
+        BodyVelocity.MaxForce = Vector3.new(1, 1, 1) * math.huge
+        BodyVelocity.Parent = character:WaitForChild("HumanoidRootPart")
+        RunService.RenderStepped:Connect(function()
+            if flyActive and BodyVelocity then
+                local moveDir = humanoid.MoveDirection
+                BodyVelocity.Velocity = moveDir * 80
+            end
+        end)
+    else
+        if BodyVelocity then
+            BodyVelocity:Destroy()
+        end
+    end
+end)
+
 -- Minimize
 local minimized = false
 minimize.MouseButton1Click:Connect(function()
     minimized = not minimized
     content.Visible = not minimized
-    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
+    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 210)
     minimize.Text = minimized and "+" or "-"
 end)
 
