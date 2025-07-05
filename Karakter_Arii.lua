@@ -1,6 +1,4 @@
 -- ✅ HWID Lock untuk Delta Executor (dengan pengecualian username tertentu)
--- Gantikan Game.PlaceId check dengan HWID check berbasis gethwid()
-
 local allowedUsers = {
     ["supa_loi"] = true,
     ["Devrenzx"] = true,
@@ -8,7 +6,11 @@ local allowedUsers = {
 }
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
 
 if not allowedUsers[player.Name] then
     local hwid = identifyexecutor and identifyexecutor() or "unknown"
@@ -16,15 +18,6 @@ if not allowedUsers[player.Name] then
         return warn("Script hanya bisa digunakan di Delta Executor.")
     end
 end
-
---// Arii Project Character Utility Script
---// UI + Speed Slider + Inf Jump + Character Clip
---// Compatible with Delta Executor
-
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoid = character:WaitForChild("Humanoid")
 
 -- GUI Setup
 local screenGui = Instance.new("ScreenGui")
@@ -61,7 +54,7 @@ local function makeDraggable(frame)
     end)
 end
 
--- Main UI
+-- Main Frame
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 300, 0, 180)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
@@ -72,6 +65,7 @@ mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 makeDraggable(mainFrame)
 
+-- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
@@ -81,6 +75,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.Parent = mainFrame
 
+-- Minimize Button
 local minimize = Instance.new("TextButton")
 minimize.Size = UDim2.new(0, 25, 0, 25)
 minimize.Position = UDim2.new(1, -30, 0, 2)
@@ -89,6 +84,7 @@ minimize.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimize.Parent = mainFrame
 
+-- Content Frame
 local content = Instance.new("Frame")
 content.Size = UDim2.new(1, -10, 1, -40)
 content.Position = UDim2.new(0, 5, 0, 35)
@@ -96,6 +92,7 @@ content.BackgroundTransparency = 1
 content.Name = "Content"
 content.Parent = mainFrame
 
+-- Speed Slider
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, 0, 0, 20)
 speedLabel.Text = "Speed: 16"
@@ -105,44 +102,41 @@ speedLabel.Font = Enum.Font.Gotham
 speedLabel.TextSize = 14
 speedLabel.Parent = content
 
-local slider = Instance.new("Frame")
-slider.Size = UDim2.new(1, 0, 0, 20)
-slider.Position = UDim2.new(0, 0, 0, 25)
-slider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-slider.Parent = content
+local sliderBack = Instance.new("Frame")
+sliderBack.Size = UDim2.new(1, -20, 0, 20)
+sliderBack.Position = UDim2.new(0, 10, 0, 25)
+sliderBack.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+sliderBack.Parent = content
 
 local knob = Instance.new("TextButton")
 knob.Size = UDim2.new(0, 10, 1, 0)
-knob.Position = UDim2.new(0, -5, 0, 0)
-knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+knob.Position = UDim2.new(0, 0, 0, 0)
+knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 knob.Text = ""
 knob.AutoButtonColor = false
-knob.Parent = slider
+knob.Parent = sliderBack
 
-local draggingKnob = false
+local dragging = false
 knob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingKnob = true
-    end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingKnob = false
-    end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
-    if draggingKnob and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local sliderAbsPos = slider.AbsolutePosition.X
-        local sliderAbsSize = slider.AbsoluteSize.X
-        local newX = math.clamp((input.Position.X - sliderAbsPos) / sliderAbsSize, 0, 1)
-        knob.Position = UDim2.new(newX, -5, 0, 0)
-        local speed = math.floor(newX * 2000)
-        humanoid.WalkSpeed = speed
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local absPos = sliderBack.AbsolutePosition.X
+        local absSize = sliderBack.AbsoluteSize.X
+        local relX = math.clamp((input.Position.X - absPos) / absSize, 0, 1)
+        local speed = math.floor(relX * 2000)
+        knob.Position = UDim2.new(relX, -5, 0, 0)
         speedLabel.Text = "Speed: " .. speed
+        humanoid.WalkSpeed = speed
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false) -- hilangkan licin
     end
 end)
+humanoid.WalkSpeed = 16
+humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
 
 -- Infinite Jump
 local infJump = false
@@ -155,12 +149,10 @@ infBtn.TextColor3 = Color3.new(1, 1, 1)
 infBtn.Font = Enum.Font.Gotham
 infBtn.TextSize = 14
 infBtn.Parent = content
-
 infBtn.MouseButton1Click:Connect(function()
     infJump = not infJump
     infBtn.Text = "Inf Jump: " .. (infJump and "ON" or "OFF")
 end)
-
 UserInputService.JumpRequest:Connect(function()
     if infJump then
         local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -181,7 +173,6 @@ clipBtn.TextColor3 = Color3.new(1, 1, 1)
 clipBtn.Font = Enum.Font.Gotham
 clipBtn.TextSize = 14
 clipBtn.Parent = content
-
 clipBtn.MouseButton1Click:Connect(function()
     clip = not clip
     clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
@@ -191,7 +182,6 @@ clipBtn.MouseButton1Click:Connect(function()
         end
     end
 end)
-
 RunService.Stepped:Connect(function()
     if clip then
         for _, v in pairs(character:GetDescendants()) do
