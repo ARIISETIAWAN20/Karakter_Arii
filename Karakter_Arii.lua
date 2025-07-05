@@ -179,10 +179,10 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Fly Button (Kamera + Analog Friendly)
+-- Fly Admin Style
 local flySpeed = 80
 local flyActive = false
-local BodyVelocity
+local BodyGyro, BodyVelocity
 local flyBtn = Instance.new("TextButton")
 flyBtn.Size = UDim2.new(1, 0, 0, 25)
 flyBtn.Position = UDim2.new(0, 0, 0, 115)
@@ -198,28 +198,29 @@ flyBtn.MouseButton1Click:Connect(function()
     flyActive = not flyActive
     flyBtn.Text = "Fly: " .. (flyActive and "ON" or "OFF")
 
+    local root = character:WaitForChild("HumanoidRootPart")
+
     if flyActive then
-        local root = character:WaitForChild("HumanoidRootPart")
+        BodyGyro = Instance.new("BodyGyro")
+        BodyGyro.P = 9e4
+        BodyGyro.maxTorque = Vector3.new(9e9, 9e9, 9e9)
+        BodyGyro.cframe = root.CFrame
+        BodyGyro.Parent = root
+
         BodyVelocity = Instance.new("BodyVelocity")
-        BodyVelocity.MaxForce = Vector3.new(1, 1, 1) * math.huge
-        BodyVelocity.Velocity = Vector3.zero
+        BodyVelocity.velocity = Vector3.new(0, 0, 0)
+        BodyVelocity.maxForce = Vector3.new(9e9, 9e9, 9e9)
         BodyVelocity.Parent = root
 
         flyConn = RunService.RenderStepped:Connect(function()
-            if not flyActive or not BodyVelocity or not root then return end
+            BodyGyro.cframe = camera.CFrame
             local moveDir = humanoid.MoveDirection
-            local camCF = camera.CFrame
-            local camLook = camCF.LookVector
-            local camRight = camCF.RightVector
-
-            local dir = Vector3.new(moveDir.X, 0, moveDir.Z)
-            dir = (camRight * dir.X + camLook * dir.Z).Unit
-            local result = dir * flySpeed
-            BodyVelocity.Velocity = Vector3.new(result.X, moveDir.Y * flySpeed, result.Z)
+            BodyVelocity.velocity = camera.CFrame:VectorToWorldSpace(moveDir) * flySpeed
         end)
     else
-        if BodyVelocity then BodyVelocity:Destroy() end
         if flyConn then flyConn:Disconnect() end
+        if BodyGyro then BodyGyro:Destroy() end
+        if BodyVelocity then BodyVelocity:Destroy() end
     end
 end)
 
