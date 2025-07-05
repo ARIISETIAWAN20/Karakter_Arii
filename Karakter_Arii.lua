@@ -1,3 +1,8 @@
+-- ✅ Game Lock untuk "99 Nights in the Forest: STRONGHOLDS"
+if game.PlaceId ~= 79546208627805 then
+	return warn("Script hanya bisa digunakan di game: 99 Nights in the Forest - STRONGHOLDS.")
+end
+
 --// Arii Project Character Utility Script
 --// UI + Speed Slider + Inf Jump + Character Clip
 --// Compatible with Delta Executor
@@ -132,7 +137,8 @@ end)
 local infJump = false
 local infBtn = Instance.new("TextButton")
 infBtn.Size = UDim2.new(1, 0, 0, 25)
-infBtn.Position = UDim2.new(0, 0, 0, 55)\ninfBtn.Text = "Inf Jump: OFF"
+infBtn.Position = UDim2.new(0, 0, 0, 55)
+infBtn.Text = "Inf Jump: OFF"
 infBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 infBtn.TextColor3 = Color3.new(1, 1, 1)
 infBtn.Font = Enum.Font.Gotham
