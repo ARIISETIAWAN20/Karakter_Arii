@@ -8,24 +8,9 @@ local allowedUsers = {
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
-
--- 🛡️ Bypass Cheat Defend Sederhana
-for _, con in ipairs(getconnections(game.DescendantAdded)) do
-    if con.Function and islclosure(con.Function) and tostring(con.Function):lower():find("kick") then
-        con:Disable()
-    end
-end
-
--- 💤 Anti AFK
-player.Idled:Connect(function()
-    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    task.wait(1)
-    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-end)
 
 if not allowedUsers[player.Name] then
     local hwid = identifyexecutor and identifyexecutor() or "unknown"
@@ -45,7 +30,6 @@ local function makeDraggable(frame)
     local dragToggle, dragInput, dragStart, startPos
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            if not input.Target:IsDescendantOf(frame) then return end
             dragToggle = true
             dragStart = input.Position
             startPos = frame.Position
@@ -56,16 +40,11 @@ local function makeDraggable(frame)
             dragToggle = false
         end
     end)
-    frame.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragToggle then
+        if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-                startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+                                       startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 end
@@ -77,6 +56,7 @@ mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
+mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 makeDraggable(mainFrame)
 
@@ -107,7 +87,7 @@ content.BackgroundTransparency = 1
 content.Name = "Content"
 content.Parent = mainFrame
 
--- Speed Slider
+-- Speed Input Box
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, 0, 0, 20)
 speedLabel.Text = "Speed: 16"
@@ -117,48 +97,28 @@ speedLabel.Font = Enum.Font.Gotham
 speedLabel.TextSize = 14
 speedLabel.Parent = content
 
-local sliderBack = Instance.new("Frame")
-sliderBack.Size = UDim2.new(1, -20, 0, 20)
-sliderBack.Position = UDim2.new(0, 10, 0, 25)
-sliderBack.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-sliderBack.BorderSizePixel = 0
-sliderBack.Parent = content
+local speedInput = Instance.new("TextBox")
+speedInput.Size = UDim2.new(1, -20, 0, 20)
+speedInput.Position = UDim2.new(0, 10, 0, 25)
+speedInput.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+speedInput.Text = "16"
+speedInput.TextColor3 = Color3.new(1, 1, 1)
+speedInput.Font = Enum.Font.Gotham
+speedInput.TextSize = 14
+speedInput.ClearTextOnFocus = false
+speedInput.Parent = content
 
-local knob = Instance.new("TextButton")
-knob.Size = UDim2.new(0, 10, 1, 0)
-knob.Position = UDim2.new(0, -5, 0, 0)
-knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-knob.Text = ""
-knob.AutoButtonColor = false
-knob.Parent = sliderBack
-knob.ZIndex = 2
-knob.Active = true
-
-local draggingKnob = false
-knob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingKnob = true
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        draggingKnob = false
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if draggingKnob and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local absPos = sliderBack.AbsolutePosition.X
-        local absSize = sliderBack.AbsoluteSize.X
-        local relX = math.clamp((input.Position.X - absPos) / absSize, 0, 1)
-        local speed = math.floor(relX * 2000)
-        knob.Position = UDim2.new(relX, -5, 0, 0)
-        speedLabel.Text = "Speed: " .. speed
-        humanoid.WalkSpeed = speed
+speedInput.FocusLost:Connect(function()
+    local num = tonumber(speedInput.Text)
+    if num then
+        num = math.clamp(num, 0, 2000)
+        humanoid.WalkSpeed = num
         humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+        speedLabel.Text = "Speed: " .. num
+    else
+        speedInput.Text = tostring(humanoid.WalkSpeed)
     end
 end)
-humanoid.WalkSpeed = 16
-humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
 
 -- Infinite Jump
 local infJump = false
@@ -225,4 +185,24 @@ minimize.MouseButton1Click:Connect(function()
     content.Visible = not minimized
     mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
     minimize.Text = minimized and "+" or "-"
+end)
+
+-- Anti AFK
+local virtualUser = game:GetService("VirtualUser")
+player.Idled:Connect(function()
+    virtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    wait(1)
+    virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
+
+-- Basic Kick Bypass
+local mt = getrawmetatable(game)
+setreadonly(mt, false)
+local oldNamecall = mt.__namecall
+mt.__namecall = newcclosure(function(self, ...)
+    local method = getnamecallmethod()
+    if method == "Kick" and not checkcaller() then
+        return warn("Kick attempt blocked")
+    end
+    return oldNamecall(self, ...)
 end)
