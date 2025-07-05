@@ -8,9 +8,24 @@ local allowedUsers = {
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local VirtualUser = game:GetService("VirtualUser")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+
+-- 🛡️ Bypass Cheat Defend Sederhana
+for _, con in ipairs(getconnections(game.DescendantAdded)) do
+    if con.Function and islclosure(con.Function) and tostring(con.Function):lower():find("kick") then
+        con:Disable()
+    end
+end
+
+-- 💤 Anti AFK
+player.Idled:Connect(function()
+    VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    task.wait(1)
+    VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+end)
 
 if not allowedUsers[player.Name] then
     local hwid = identifyexecutor and identifyexecutor() or "unknown"
@@ -30,6 +45,7 @@ local function makeDraggable(frame)
     local dragToggle, dragInput, dragStart, startPos
     frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            if not input.Target:IsDescendantOf(frame) then return end
             dragToggle = true
             dragStart = input.Position
             startPos = frame.Position
@@ -61,7 +77,6 @@ mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
-mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 makeDraggable(mainFrame)
 
@@ -106,25 +121,32 @@ local sliderBack = Instance.new("Frame")
 sliderBack.Size = UDim2.new(1, -20, 0, 20)
 sliderBack.Position = UDim2.new(0, 10, 0, 25)
 sliderBack.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+sliderBack.BorderSizePixel = 0
 sliderBack.Parent = content
 
 local knob = Instance.new("TextButton")
 knob.Size = UDim2.new(0, 10, 1, 0)
-knob.Position = UDim2.new(0, 0, 0, 0)
+knob.Position = UDim2.new(0, -5, 0, 0)
 knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 knob.Text = ""
 knob.AutoButtonColor = false
 knob.Parent = sliderBack
+knob.ZIndex = 2
+knob.Active = true
 
-local dragging = false
+local draggingKnob = false
 knob.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingKnob = true
+    end
 end)
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        draggingKnob = false
+    end
 end)
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+    if draggingKnob and input.UserInputType == Enum.UserInputType.MouseMovement then
         local absPos = sliderBack.AbsolutePosition.X
         local absSize = sliderBack.AbsoluteSize.X
         local relX = math.clamp((input.Position.X - absPos) / absSize, 0, 1)
@@ -132,7 +154,7 @@ UserInputService.InputChanged:Connect(function(input)
         knob.Position = UDim2.new(relX, -5, 0, 0)
         speedLabel.Text = "Speed: " .. speed
         humanoid.WalkSpeed = speed
-        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false) -- hilangkan licin
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
     end
 end)
 humanoid.WalkSpeed = 16
@@ -149,10 +171,12 @@ infBtn.TextColor3 = Color3.new(1, 1, 1)
 infBtn.Font = Enum.Font.Gotham
 infBtn.TextSize = 14
 infBtn.Parent = content
+
 infBtn.MouseButton1Click:Connect(function()
     infJump = not infJump
     infBtn.Text = "Inf Jump: " .. (infJump and "ON" or "OFF")
 end)
+
 UserInputService.JumpRequest:Connect(function()
     if infJump then
         local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
@@ -173,6 +197,7 @@ clipBtn.TextColor3 = Color3.new(1, 1, 1)
 clipBtn.Font = Enum.Font.Gotham
 clipBtn.TextSize = 14
 clipBtn.Parent = content
+
 clipBtn.MouseButton1Click:Connect(function()
     clip = not clip
     clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
@@ -182,6 +207,7 @@ clipBtn.MouseButton1Click:Connect(function()
         end
     end
 end)
+
 RunService.Stepped:Connect(function()
     if clip then
         for _, v in pairs(character:GetDescendants()) do
