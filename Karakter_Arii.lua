@@ -1,61 +1,67 @@
--- ✅ Game Lock untuk "99 Nights in the Forest: STRONGHOLDS"
-if game.PlaceId ~= 79546208627805 then
-	return warn("Script hanya bisa digunakan di game: 99 Nights in the Forest - STRONGHOLDS.")
+-- ✅ HWID Lock untuk Delta Executor (dengan pengecualian username tertentu)
+-- Gantikan Game.PlaceId check dengan HWID check berbasis gethwid()
+
+local allowedUsers = {
+    ["supa_loi"] = true,
+    ["Devrenzx"] = true,
+    ["Frenngk"] = true,
+}
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+if not allowedUsers[player.Name] then
+    local hwid = identifyexecutor and identifyexecutor() or "unknown"
+    if not string.find(hwid, "Delta") then
+        return warn("Script hanya bisa digunakan di Delta Executor.")
+    end
 end
 
 --// Arii Project Character Utility Script
 --// UI + Speed Slider + Inf Jump + Character Clip
 --// Compatible with Delta Executor
 
--- Services
-local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
-local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
--- ScreenGui
+-- GUI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AriiProjectGui"
-screenGui.Parent = game:GetService("CoreGui")
+screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
+pcall(function() screenGui.Parent = game:GetService("CoreGui") end)
 
--- Drag function
 local function makeDraggable(frame)
-	local dragToggle, dragInput, dragStart, startPos
-
-	frame.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragToggle = true
-			dragStart = input.Position
-			startPos = frame.Position
-		end
-	end)
-
-	frame.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragToggle = false
-		end
-	end)
-
-	frame.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement then
-			dragInput = input
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if input == dragInput and dragToggle then
-			local delta = input.Position - dragStart
-			frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-				startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-		end
-	end)
+    local dragToggle, dragInput, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = frame.Position
+        end
+    end)
+    frame.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragToggle = false
+        end
+    end)
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragToggle then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 end
 
--- Main Frame
+-- Main UI
 local mainFrame = Instance.new("Frame")
 mainFrame.Size = UDim2.new(0, 300, 0, 180)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
@@ -66,7 +72,6 @@ mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 makeDraggable(mainFrame)
 
--- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 30)
 title.BackgroundTransparency = 1
@@ -76,7 +81,6 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.Parent = mainFrame
 
--- Minimize Button
 local minimize = Instance.new("TextButton")
 minimize.Size = UDim2.new(0, 25, 0, 25)
 minimize.Position = UDim2.new(1, -30, 0, 2)
@@ -85,7 +89,6 @@ minimize.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
 minimize.TextColor3 = Color3.fromRGB(255, 255, 255)
 minimize.Parent = mainFrame
 
--- Content Frame
 local content = Instance.new("Frame")
 content.Size = UDim2.new(1, -10, 1, -40)
 content.Position = UDim2.new(0, 5, 0, 35)
@@ -93,7 +96,6 @@ content.BackgroundTransparency = 1
 content.Name = "Content"
 content.Parent = mainFrame
 
--- Speed Slider
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, 0, 0, 20)
 speedLabel.Text = "Speed: 16"
@@ -113,27 +115,27 @@ slider.Parent = content
 
 local dragging = false
 local function updateSpeedSlider(x)
-	local relX = math.clamp((x - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
-	local speed = math.floor(relX * 2000)
-	speedLabel.Text = "Speed: " .. speed
-	humanoid.WalkSpeed = speed
+    local relX = math.clamp((x - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
+    local speed = math.floor(relX * 2000)
+    speedLabel.Text = "Speed: " .. speed
+    humanoid.WalkSpeed = speed
 end
 
 slider.InputBegan:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSpeedSlider(input.Position.X) end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSpeedSlider(input.Position.X) end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-	if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-		updateSpeedSlider(input.Position.X)
-	end
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        updateSpeedSlider(input.Position.X)
+    end
 end)
 
--- Infinite Jump Toggle
+-- Infinite Jump
 local infJump = false
 local infBtn = Instance.new("TextButton")
 infBtn.Size = UDim2.new(1, 0, 0, 25)
@@ -146,17 +148,17 @@ infBtn.TextSize = 14
 infBtn.Parent = content
 
 infBtn.MouseButton1Click:Connect(function()
-	infJump = not infJump
-	infBtn.Text = "Inf Jump: " .. (infJump and "ON" or "OFF")
+    infJump = not infJump
+    infBtn.Text = "Inf Jump: " .. (infJump and "ON" or "OFF")
 end)
 
 UserInputService.JumpRequest:Connect(function()
-	if infJump then
-		character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
-	end
+    if infJump then
+        character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+    end
 end)
 
--- Noclip Toggle
+-- Character Clip
 local clip = false
 local clipBtn = Instance.new("TextButton")
 clipBtn.Size = UDim2.new(1, 0, 0, 25)
@@ -169,25 +171,25 @@ clipBtn.TextSize = 14
 clipBtn.Parent = content
 
 clipBtn.MouseButton1Click:Connect(function()
-	clip = not clip
-	clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
+    clip = not clip
+    clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
 end)
 
 RunService.Stepped:Connect(function()
-	if clip then
-		for _, v in pairs(character:GetDescendants()) do
-			if v:IsA("BasePart") and v.CanCollide == true then
-				v.CanCollide = false
-			end
-		end
-	end
+    if clip then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") and v.CanCollide == true then
+                v.CanCollide = false
+            end
+        end
+    end
 end)
 
--- Minimize Functionality
+-- Minimize
 local minimized = false
 minimize.MouseButton1Click:Connect(function()
-	minimized = not minimized
-	content.Visible = not minimized
-	mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
-	minimize.Text = minimized and "+" or "-"
+    minimized = not minimized
+    content.Visible = not minimized
+    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
+    minimize.Text = minimized and "+" or "-"
 end)
