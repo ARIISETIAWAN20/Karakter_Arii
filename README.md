@@ -1,1 +1,0 @@
-# Karakter_Arii
