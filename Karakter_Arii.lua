@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
+local camera = workspace.CurrentCamera
 
 if not allowedUsers[player.Name] then
     local hwid = identifyexecutor and identifyexecutor() or "unknown"
@@ -51,7 +52,7 @@ end
 
 -- Main Frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 210)
+mainFrame.Size = UDim2.new(0, 300, 0, 240)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
@@ -178,7 +179,8 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Fly/Unfly
+-- Fly Button (Kamera + Analog Friendly)
+local flySpeed = 80
 local flyActive = false
 local BodyVelocity
 local flyBtn = Instance.new("TextButton")
@@ -191,34 +193,34 @@ flyBtn.Font = Enum.Font.Gotham
 flyBtn.TextSize = 14
 flyBtn.Parent = content
 
+local flyConn
 flyBtn.MouseButton1Click:Connect(function()
     flyActive = not flyActive
     flyBtn.Text = "Fly: " .. (flyActive and "ON" or "OFF")
+
     if flyActive then
+        local root = character:WaitForChild("HumanoidRootPart")
         BodyVelocity = Instance.new("BodyVelocity")
-        BodyVelocity.Velocity = Vector3.zero
         BodyVelocity.MaxForce = Vector3.new(1, 1, 1) * math.huge
-        BodyVelocity.Parent = character:WaitForChild("HumanoidRootPart")
-        RunService.RenderStepped:Connect(function()
-            if flyActive and BodyVelocity then
-                local moveDir = humanoid.MoveDirection
-                BodyVelocity.Velocity = moveDir * 80
-            end
+        BodyVelocity.Velocity = Vector3.zero
+        BodyVelocity.Parent = root
+
+        flyConn = RunService.RenderStepped:Connect(function()
+            if not flyActive or not BodyVelocity or not root then return end
+            local moveDir = humanoid.MoveDirection
+            local camCF = camera.CFrame
+            local camLook = camCF.LookVector
+            local camRight = camCF.RightVector
+
+            local dir = Vector3.new(moveDir.X, 0, moveDir.Z)
+            dir = (camRight * dir.X + camLook * dir.Z).Unit
+            local result = dir * flySpeed
+            BodyVelocity.Velocity = Vector3.new(result.X, moveDir.Y * flySpeed, result.Z)
         end)
     else
-        if BodyVelocity then
-            BodyVelocity:Destroy()
-        end
+        if BodyVelocity then BodyVelocity:Destroy() end
+        if flyConn then flyConn:Disconnect() end
     end
-end)
-
--- Minimize
-local minimized = false
-minimize.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 210)
-    minimize.Text = minimized and "+" or "-"
 end)
 
 -- Anti AFK
@@ -239,4 +241,13 @@ mt.__namecall = newcclosure(function(self, ...)
         return warn("Kick attempt blocked")
     end
     return oldNamecall(self, ...)
+end)
+
+-- Minimize
+local minimized = false
+minimize.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    content.Visible = not minimized
+    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 240)
+    minimize.Text = minimized and "+" or "-"
 end)
