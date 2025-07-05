@@ -19,49 +19,54 @@ if not allowedUsers[player.Name] then
     end
 end
 
--- GUI Setup
+-- ✅ GUI Setup
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AriiProjectGui"
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
 screenGui.Parent = player:WaitForChild("PlayerGui")
 
+-- ✅ Fungsi Drag Support Mobile
 local function makeDraggable(frame)
-    local dragToggle, dragStart, startPos
+    local dragging, dragInput, dragStart, startPos
 
-    local function onInputBegan(input)
+    frame.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragToggle = true
+            dragging = true
             dragStart = input.Position
             startPos = frame.Position
+
             input.Changed:Connect(function()
                 if input.UserInputState == Enum.UserInputState.End then
-                    dragToggle = false
+                    dragging = false
                 end
             end)
         end
-    end
+    end)
 
-    local function onInputChanged(input)
-        if dragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
             local delta = input.Position - dragStart
             frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
                                        startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
-    end
-
-    frame.InputBegan:Connect(onInputBegan)
-    frame.InputChanged:Connect(onInputChanged)
-    UserInputService.InputChanged:Connect(onInputChanged)
+    end)
 end
 
--- Main Frame
+-- ✅ Main Frame
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 300, 0, 210)
+mainFrame.Size = UDim2.new(0, 300, 0, 180)
 mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
+mainFrame.Selectable = true
 mainFrame.Draggable = false
 mainFrame.Parent = screenGui
 makeDraggable(mainFrame)
@@ -93,7 +98,7 @@ content.BackgroundTransparency = 1
 content.Name = "Content"
 content.Parent = mainFrame
 
--- Speed Input Box
+-- ✅ Speed Input
 local speedLabel = Instance.new("TextLabel")
 speedLabel.Size = UDim2.new(1, 0, 0, 20)
 speedLabel.Text = "Speed: 16"
@@ -126,7 +131,7 @@ speedInput.FocusLost:Connect(function()
     end
 end)
 
--- Infinite Jump
+-- ✅ Infinite Jump
 local infJump = false
 local infBtn = Instance.new("TextButton")
 infBtn.Size = UDim2.new(1, 0, 0, 25)
@@ -152,7 +157,7 @@ UserInputService.JumpRequest:Connect(function()
     end
 end)
 
--- Character Clip
+-- ✅ Character Clip
 local clip = false
 local clipBtn = Instance.new("TextButton")
 clipBtn.Size = UDim2.new(1, 0, 0, 25)
@@ -184,81 +189,99 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Player ESP (Sejauh apapun)
-local nameESPEnabled = false
-local nameESPBtn = Instance.new("TextButton")
-nameESPBtn.Size = UDim2.new(1, 0, 0, 25)
-nameESPBtn.Position = UDim2.new(0, 0, 0, 115)
-nameESPBtn.Text = "Player ESP: OFF"
-nameESPBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-nameESPBtn.TextColor3 = Color3.new(1, 1, 1)
-nameESPBtn.Font = Enum.Font.Gotham
-nameESPBtn.TextSize = 14
-nameESPBtn.Parent = content
+-- ✅ Player ESP
+local espEnabled = false
+local espBtn = Instance.new("TextButton")
+espBtn.Size = UDim2.new(1, 0, 0, 25)
+espBtn.Position = UDim2.new(0, 0, 0, 115)
+espBtn.Text = "Player ESP: OFF"
+espBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+espBtn.TextColor3 = Color3.new(1, 1, 1)
+espBtn.Font = Enum.Font.Gotham
+espBtn.TextSize = 14
+espBtn.Parent = content
 
-local function toggleNameESP(state)
-    nameESPEnabled = state
+local function clearESP()
     for _, plr in pairs(Players:GetPlayers()) do
         if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
-            local head = plr.Character.Head
-            if head:FindFirstChild("NameTag") then
-                head:FindFirstChild("NameTag"):Destroy()
-            end
-            if state then
-                local billboard = Instance.new("BillboardGui")
-                billboard.Name = "NameTag"
-                billboard.Adornee = head
-                billboard.Size = UDim2.new(0, 100, 0, 40)
-                billboard.StudsOffset = Vector3.new(0, 2, 0)
-                billboard.AlwaysOnTop = true
-                billboard.Parent = head
-
-                local nameLabel = Instance.new("TextLabel")
-                nameLabel.Size = UDim2.new(1, 0, 1, 0)
-                nameLabel.BackgroundTransparency = 1
-                nameLabel.Text = plr.Name
-                nameLabel.TextColor3 = Color3.new(1, 1, 1)
-                nameLabel.TextStrokeTransparency = 0.5
-                nameLabel.Font = Enum.Font.GothamBold
-                nameLabel.TextScaled = true
-                nameLabel.Parent = billboard
-            end
+            local esp = plr.Character.Head:FindFirstChild("PlayerESP")
+            if esp then esp:Destroy() end
         end
     end
 end
 
-nameESPBtn.MouseButton1Click:Connect(function()
-    nameESPEnabled = not nameESPEnabled
-    nameESPBtn.Text = "Player ESP: " .. (nameESPEnabled and "ON" or "OFF")
-    toggleNameESP(nameESPEnabled)
+local function addESP(plr)
+    local char = plr.Character or plr.CharacterAdded:Wait()
+    local head = char:WaitForChild("Head")
+    if head:FindFirstChild("PlayerESP") then return end
+    local bill = Instance.new("BillboardGui")
+    bill.Name = "PlayerESP"
+    bill.Adornee = head
+    bill.Size = UDim2.new(0, 100, 0, 40)
+    bill.AlwaysOnTop = true
+    bill.StudsOffset = Vector3.new(0, 2, 0)
+    bill.Parent = head
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, 0, 1, 0)
+    label.BackgroundTransparency = 1
+    label.TextColor3 = Color3.new(1, 1, 1)
+    label.TextStrokeTransparency = 0.5
+    label.Font = Enum.Font.GothamBold
+    label.TextScaled = true
+    label.Text = plr.Name
+    label.Parent = bill
+end
+
+local function toggleESP(state)
+    clearESP()
+    if state then
+        for _, p in pairs(Players:GetPlayers()) do
+            if p ~= player then
+                addESP(p)
+            end
+        end
+        Players.PlayerAdded:Connect(function(p)
+            p.CharacterAdded:Connect(function()
+                if espEnabled then
+                    addESP(p)
+                end
+            end)
+        end)
+    end
+end
+
+espBtn.MouseButton1Click:Connect(function()
+    espEnabled = not espEnabled
+    toggleESP(espEnabled)
+    espBtn.Text = "Player ESP: " .. (espEnabled and "ON" or "OFF")
 end)
 
--- Minimize
+-- ✅ Minimize Toggle
 local minimized = false
 minimize.MouseButton1Click:Connect(function()
     minimized = not minimized
     content.Visible = not minimized
-    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 210)
+    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
     minimize.Text = minimized and "+" or "-"
 end)
 
--- Anti AFK
+-- ✅ Anti AFK
 local virtualUser = game:GetService("VirtualUser")
 player.Idled:Connect(function()
-    virtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    virtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     wait(1)
-    virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    virtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
 end)
 
--- Basic Kick Bypass
+-- ✅ Kick Bypass
 local mt = getrawmetatable(game)
 setreadonly(mt, false)
-local oldNamecall = mt.__namecall
+local old = mt.__namecall
 mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if method == "Kick" and not checkcaller() then
+    if getnamecallmethod() == "Kick" and not checkcaller() then
         return warn("Kick attempt blocked")
     end
-    return oldNamecall(self, ...)
+    return old(self, ...)
 end)
 setreadonly(mt, true)
