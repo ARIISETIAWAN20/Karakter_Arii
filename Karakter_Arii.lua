@@ -1,8 +1,8 @@
 -- ✅ HWID Lock untuk Delta Executor (dengan pengecualian username tertentu)
 local allowedUsers = {
-    ["supa_loi"] = true,
-    ["Devrenzx"] = true,
-    ["Frenngk"] = true,
+    ["supa_loi"] = true,
+    ["Devrenzx"] = true,
+    ["Frenngk"] = true,
 }
 
 local Players = game:GetService("Players")
@@ -13,10 +13,10 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
 if not allowedUsers[player.Name] then
-    local hwid = identifyexecutor and identifyexecutor() or "unknown"
-    if not string.find(hwid, "Delta") then
-        return warn("Script hanya bisa digunakan di Delta Executor.")
-    end
+    local hwid = identifyexecutor and identifyexecutor() or "unknown"
+    if not string.find(hwid, "Delta") then
+        return warn("Script hanya bisa digunakan di Delta Executor.")
+    end
 end
 
 -- ✅ GUI Setup
@@ -24,29 +24,29 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "AriiProjectGui"
 screenGui.IgnoreGuiInset = true
 screenGui.ResetOnSpawn = false
-pcall(function() screenGui.Parent = game:GetService("CoreGui") end)
+screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local function makeDraggable(frame)
-    local dragToggle, dragInput, dragStart, startPos
-    frame.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragToggle = true
-            dragStart = input.Position
-            startPos = frame.Position
-        end
-    end)
-    frame.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragToggle = false
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
-                                       startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
+    local dragToggle, dragStart, startPos
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragToggle = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragToggle = false
+                end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragToggle and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+                                       startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
 end
 
 -- ✅ Main Frame
@@ -56,7 +56,6 @@ mainFrame.Position = UDim2.new(0.05, 0, 0.3, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
-mainFrame.Draggable = true
 mainFrame.Parent = screenGui
 makeDraggable(mainFrame)
 
@@ -109,15 +108,15 @@ speedInput.ClearTextOnFocus = false
 speedInput.Parent = content
 
 speedInput.FocusLost:Connect(function()
-    local num = tonumber(speedInput.Text)
-    if num then
-        num = math.clamp(num, 0, 2000)
-        humanoid.WalkSpeed = num
-        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
-        speedLabel.Text = "Speed: " .. num
-    else
-        speedInput.Text = tostring(humanoid.WalkSpeed)
-    end
+    local num = tonumber(speedInput.Text)
+    if num then
+        num = math.clamp(num, 0, 2000)
+        humanoid.WalkSpeed = num
+        humanoid:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+        speedLabel.Text = "Speed: " .. num
+    else
+        speedInput.Text = tostring(humanoid.WalkSpeed)
+    end
 end)
 
 -- Infinite Jump
@@ -133,17 +132,17 @@ infBtn.TextSize = 14
 infBtn.Parent = content
 
 infBtn.MouseButton1Click:Connect(function()
-    infJump = not infJump
-    infBtn.Text = "Inf Jump: " .. (infJump and "ON" or "OFF")
+    infJump = not infJump
+    infBtn.Text = "Inf Jump: " .. (infJump and "ON" or "OFF")
 end)
 
 UserInputService.JumpRequest:Connect(function()
-    if infJump then
-        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-        if h then
-            h:ChangeState(Enum.HumanoidStateType.Jumping)
-        end
-    end
+    if infJump then
+        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if h then
+            h:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
+    end
 end)
 
 -- Character Clip
@@ -159,23 +158,23 @@ clipBtn.TextSize = 14
 clipBtn.Parent = content
 
 clipBtn.MouseButton1Click:Connect(function()
-    clip = not clip
-    clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = not clip
-        end
-    end
+    clip = not clip
+    clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = not clip
+        end
+    end
 end)
 
 RunService.Stepped:Connect(function()
-    if clip then
-        for _, v in pairs(character:GetDescendants()) do
-            if v:IsA("BasePart") and v.CanCollide then
-                v.CanCollide = false
-            end
-        end
-    end
+    if clip then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") and v.CanCollide then
+                v.CanCollide = false
+            end
+        end
+    end
 end)
 
 -- Player ESP
@@ -183,61 +182,61 @@ local espEnabled = false
 local espConnections = {}
 
 local function clearESP()
-    for _, plr in pairs(Players:GetPlayers()) do
-        if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
-            local esp = plr.Character.Head:FindFirstChild("PlayerESP")
-            if esp then esp:Destroy() end
-        end
-    end
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= player and plr.Character and plr.Character:FindFirstChild("Head") then
+            local esp = plr.Character.Head:FindFirstChild("PlayerESP")
+            if esp then esp:Destroy() end
+        end
+    end
 end
 
 local function createESP(plr)
-    if plr == player then return end
-    local function addESP(char)
-        local head = char:FindFirstChild("Head")
-        if head and not head:FindFirstChild("PlayerESP") then
-            local billboard = Instance.new("BillboardGui")
-            billboard.Name = "PlayerESP"
-            billboard.Size = UDim2.new(0, 100, 0, 40)
-            billboard.StudsOffset = Vector3.new(0, 2, 0)
-            billboard.Adornee = head
-            billboard.AlwaysOnTop = true
-            billboard.Parent = head
+    if plr == player then return end
+    local function addESP(char)
+        local head = char:FindFirstChild("Head")
+        if head and not head:FindFirstChild("PlayerESP") then
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "PlayerESP"
+            billboard.Size = UDim2.new(0, 100, 0, 40)
+            billboard.StudsOffset = Vector3.new(0, 2, 0)
+            billboard.Adornee = head
+            billboard.AlwaysOnTop = true
+            billboard.Parent = head
 
-            local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, 0, 1, 0)
-            label.BackgroundTransparency = 1
-            label.Text = plr.Name
-            label.TextColor3 = Color3.new(1, 1, 1)
-            label.TextStrokeTransparency = 0.5
-            label.Font = Enum.Font.GothamBold
-            label.TextScaled = true
-            label.Parent = billboard
-        end
-    end
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Text = plr.Name
+            label.TextColor3 = Color3.new(1, 1, 1)
+            label.TextStrokeTransparency = 0.5
+            label.Font = Enum.Font.GothamBold
+            label.TextScaled = true
+            label.Parent = billboard
+        end
+    end
 
-    if plr.Character then addESP(plr.Character) end
-    table.insert(espConnections, plr.CharacterAdded:Connect(addESP))
+    if plr.Character then addESP(plr.Character) end
+    table.insert(espConnections, plr.CharacterAdded:Connect(addESP))
 end
 
 local function toggleESP(state)
-    espEnabled = state
-    clearESP()
-    if espEnabled then
-        for _, p in pairs(Players:GetPlayers()) do
-            createESP(p)
-        end
-        table.insert(espConnections, Players.PlayerAdded:Connect(function(plr)
-            createESP(plr)
-        end))
-    else
-        for _, c in ipairs(espConnections) do
-            if typeof(c) == "RBXScriptConnection" then
-                c:Disconnect()
-            end
-        end
-        espConnections = {}
-    end
+    espEnabled = state
+    clearESP()
+    if espEnabled then
+        for _, p in pairs(Players:GetPlayers()) do
+            createESP(p)
+        end
+        table.insert(espConnections, Players.PlayerAdded:Connect(function(plr)
+            createESP(plr)
+        end))
+    else
+        for _, c in ipairs(espConnections) do
+            if typeof(c) == "RBXScriptConnection" then
+                c:Disconnect()
+            end
+        end
+        espConnections = {}
+    end
 end
 
 -- ESP Button
@@ -252,36 +251,37 @@ espBtn.TextSize = 14
 espBtn.Parent = content
 
 espBtn.MouseButton1Click:Connect(function()
-    espEnabled = not espEnabled
-    toggleESP(espEnabled)
-    espBtn.Text = "Player ESP: " .. (espEnabled and "ON" or "OFF")
+    espEnabled = not espEnabled
+    toggleESP(espEnabled)
+    espBtn.Text = "Player ESP: " .. (espEnabled and "ON" or "OFF")
 end)
 
--- Minimize Button
+-- Minimize Function
 local minimized = false
 minimize.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    content.Visible = not minimized
-    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
-    minimize.Text = minimized and "+" or "-"
+    minimized = not minimized
+    content.Visible = not minimized
+    mainFrame.Size = minimized and UDim2.new(0, 300, 0, 35) or UDim2.new(0, 300, 0, 180)
+    minimize.Text = minimized and "+" or "-"
 end)
 
--- Anti AFK
+-- ✅ Anti AFK
 local virtualUser = game:GetService("VirtualUser")
 player.Idled:Connect(function()
-    virtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
-    wait(1)
-    virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    virtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    wait(1)
+    virtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
 end)
 
--- Kick Bypass
+-- ✅ Kick Bypass
 local mt = getrawmetatable(game)
 setreadonly(mt, false)
 local oldNamecall = mt.__namecall
 mt.__namecall = newcclosure(function(self, ...)
-    local method = getnamecallmethod()
-    if method == "Kick" and not checkcaller() then
-        return warn("Kick attempt blocked")
-    end
-    return oldNamecall(self, ...)
+    local method = getnamecallmethod()
+    if method == "Kick" and not checkcaller() then
+        return warn("Kick attempt blocked")
+    end
+    return oldNamecall(self, ...)
 end)
+setreadonly(mt, true)
