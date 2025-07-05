@@ -113,26 +113,27 @@ slider.Parent = content
 
 local knob = Instance.new("TextButton")
 knob.Size = UDim2.new(0, 10, 1, 0)
-knob.Position = UDim2.new(0, 0, 0, 0)
+knob.Position = UDim2.new(0, -5, 0, 0)
 knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
 knob.Text = ""
+knob.AutoButtonColor = false
 knob.Parent = slider
 
-local dragging = false
+local draggingKnob = false
 knob.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
+        draggingKnob = true
     end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = false
+        draggingKnob = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+    if draggingKnob and input.UserInputType == Enum.UserInputType.MouseMovement then
         local sliderAbsPos = slider.AbsolutePosition.X
         local sliderAbsSize = slider.AbsoluteSize.X
         local newX = math.clamp((input.Position.X - sliderAbsPos) / sliderAbsSize, 0, 1)
@@ -162,7 +163,10 @@ end)
 
 UserInputService.JumpRequest:Connect(function()
     if infJump then
-        character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+        local h = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+        if h then
+            h:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
 end)
 
@@ -181,11 +185,9 @@ clipBtn.Parent = content
 clipBtn.MouseButton1Click:Connect(function()
     clip = not clip
     clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
-    if not clip then
-        for _, v in pairs(character:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.CanCollide = true
-            end
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = not clip
         end
     end
 end)
@@ -193,7 +195,7 @@ end)
 RunService.Stepped:Connect(function()
     if clip then
         for _, v in pairs(character:GetDescendants()) do
-            if v:IsA("BasePart") and v.CanCollide == true then
+            if v:IsA("BasePart") and v.CanCollide then
                 v.CanCollide = false
             end
         end
