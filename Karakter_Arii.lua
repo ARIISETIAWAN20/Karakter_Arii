@@ -105,33 +105,41 @@ speedLabel.Font = Enum.Font.Gotham
 speedLabel.TextSize = 14
 speedLabel.Parent = content
 
-local slider = Instance.new("TextButton")
+local slider = Instance.new("Frame")
 slider.Size = UDim2.new(1, 0, 0, 20)
 slider.Position = UDim2.new(0, 0, 0, 25)
 slider.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-slider.Text = ""
-slider.AutoButtonColor = false
 slider.Parent = content
 
-local dragging = false
-local function updateSpeedSlider(x)
-    local relX = math.clamp((x - slider.AbsolutePosition.X) / slider.AbsoluteSize.X, 0, 1)
-    local speed = math.floor(relX * 2000)
-    speedLabel.Text = "Speed: " .. speed
-    humanoid.WalkSpeed = speed
-end
+local knob = Instance.new("TextButton")
+knob.Size = UDim2.new(0, 10, 1, 0)
+knob.Position = UDim2.new(0, 0, 0, 0)
+knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+knob.Text = ""
+knob.Parent = slider
 
-slider.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true updateSpeedSlider(input.Position.X) end
+local dragging = false
+knob.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+    end
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
     if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        updateSpeedSlider(input.Position.X)
+        local sliderAbsPos = slider.AbsolutePosition.X
+        local sliderAbsSize = slider.AbsoluteSize.X
+        local newX = math.clamp((input.Position.X - sliderAbsPos) / sliderAbsSize, 0, 1)
+        knob.Position = UDim2.new(newX, -5, 0, 0)
+        local speed = math.floor(newX * 2000)
+        humanoid.WalkSpeed = speed
+        speedLabel.Text = "Speed: " .. speed
     end
 end)
 
@@ -173,6 +181,13 @@ clipBtn.Parent = content
 clipBtn.MouseButton1Click:Connect(function()
     clip = not clip
     clipBtn.Text = "Character Clip: " .. (clip and "ON" or "OFF")
+    if not clip then
+        for _, v in pairs(character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = true
+            end
+        end
+    end
 end)
 
 RunService.Stepped:Connect(function()
